@@ -137,6 +137,9 @@ func initEnvConfig() {
 		events := strings.Split(envWebhookEvents, ",")
 		config.WhatsappWebhookEvents = events
 	}
+	if viper.IsSet("whatsapp_webhook_outgoing_message") {
+		config.WhatsappWebhookOutgoingMessage = viper.GetBool("whatsapp_webhook_outgoing_message")
+	}
 	if viper.IsSet("whatsapp_account_validation") {
 		config.WhatsappAccountValidation = viper.GetBool("whatsapp_account_validation")
 	}
@@ -262,6 +265,12 @@ func initFlags() {
 		"webhook-events", "",
 		config.WhatsappWebhookEvents,
 		`whitelist of events to forward to webhook (empty = all events) --webhook-events <string> | example: --webhook-events="message,message.ack,group.participants"`,
+	)
+	rootCmd.PersistentFlags().BoolVarP(
+		&config.WhatsappWebhookOutgoingMessage,
+		"webhook-outgoing-message", "",
+		config.WhatsappWebhookOutgoingMessage,
+		`include outgoing (sent by self) messages in webhook --webhook-outgoing-message <true/false> | example: --webhook-outgoing-message=true`,
 	)
 	rootCmd.PersistentFlags().BoolVarP(
 		&config.WhatsappAccountValidation,

@@ -33,6 +33,7 @@ var (
 	WhatsappWebhookSecret             = "secret"
 	WhatsappWebhookInsecureSkipVerify = false  // Skip TLS certificate verification for webhooks (insecure)
 	WhatsappWebhookEvents             []string // Whitelist of events to forward to webhook (empty = all events)
+	WhatsappWebhookOutgoingMessage    = false  // Include outgoing (sent by self) messages in webhook
 	WhatsappLogLevel                           = "ERROR"
 	WhatsappSettingMaxImageSize       int64    = 20000000  // 20MB
 	WhatsappSettingMaxFileSize        int64    = 50000000  // 50MB
