@@ -114,6 +114,17 @@ func handleWebhookForward(ctx context.Context, evt *events.Message, client *what
 		}
 	}
 
+	// Skip webhook for outgoing messages (IsFromMe) unless explicitly enabled via config.
+	// By default, outgoing messages are skipped to avoid duplicate webhooks
+	// when multiple devices are connected. The sender's device receives an echo
+	// of the sent message, but we only want the recipient's device to trigger webhook.
+	// Set WHATSAPP_WEBHOOK_INCLUDE_OUTGOING=true to include outgoing messages.
+	// Note: Protocol messages (REVOKE, MESSAGE_EDIT) are always allowed through above.
+	if evt.Info.IsFromMe && !config.WhatsappWebhookIncludeOutgoing {
+		log.Debugf("Skipping webhook for outgoing message %s (IsFromMe=true, WHATSAPP_WEBHOOK_INCLUDE_OUTGOING=false)", evt.Info.ID)
+		return
+	}
+
 	if (len(config.WhatsappWebhook) > 0 || config.ChatwootEnabled) &&
 		!strings.Contains(evt.Info.SourceString(), "broadcast") {
 		go func(e *events.Message, c *whatsmeow.Client) {
