@@ -23,6 +23,15 @@ jobs:
       packages: write
 
     steps:
+      - name: Notify build started
+        if: always()
+        run: |
+          curl -s \
+            -H "Title: Docker Build Started" \
+            -H "Tags: rocket" \
+            -d "Building ${{ github.repository }} (${GITHUB_REF_NAME}) triggered by ${{ github.event_name }}" \
+            https://ntfy.sh/deploy-on-github-xasr6KBz47PjswPf53A78Fib
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -63,3 +72,21 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Notify build result
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            TITLE="Docker Build Success ✅"
+            TAGS="white_check_mark"
+            MSG="Successfully built and pushed ${{ github.repository }} (${GITHUB_REF_NAME})"
+          else
+            TITLE="Docker Build Failed ❌"
+            TAGS="x"
+            MSG="Build failed for ${{ github.repository }} (${GITHUB_REF_NAME}). Check: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
+          curl -s \
+            -H "Title: $TITLE" \
+            -H "Tags: $TAGS" \
+            -d "$MSG" \
+            https://ntfy.sh/deploy-on-github-xasr6KBz47PjswPf53A78Fib
