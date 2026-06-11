@@ -14,7 +14,7 @@ export default {
       pageSize: 20,
       totalMessages: 0,
       // Media download tracking
-      downloadedMedia: {}, // messageId -> { file_path, media_type, file_size, status }
+      downloadedMedia: {}, // messageId -> { file_url, file_path, media_type, file_size, status }
       downloadingMedia: new Set(), // Set of messageIds currently downloading
       mediaDownloadErrors: {}, // messageId -> error message
       maxConcurrentDownloads: 3,
@@ -197,7 +197,7 @@ export default {
 
       // Show downloaded media
       if (isDownloaded && downloadedInfo) {
-        const filePath = downloadedInfo.file_path;
+        const fileUrl = downloadedInfo.file_url || downloadedInfo.file_path;
         const mediaType = downloadedInfo.media_type;
         const filename = downloadedInfo.filename;
         const fileSize = downloadedInfo.file_size;
@@ -207,7 +207,7 @@ export default {
             return {
               type: 'image',
               content: `<div class="ui fluid image">
-                <img src="${filePath}" alt="${filename}" style="max-width: 300px; max-height: 300px; border-radius: 4px;" 
+                <img src="${fileUrl}" alt="${filename}" style="max-width: 300px; max-height: 300px; border-radius: 4px;" 
                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                 <div style="display: none;" class="ui placeholder segment">
                   <div class="ui icon header">
@@ -223,9 +223,9 @@ export default {
               type: 'video',
               content: `<div class="ui fluid">
                 <video controls style="max-width: 300px; max-height: 300px; border-radius: 4px;" preload="metadata">
-                  <source src="${filePath}" type="video/mp4">
-                  <source src="${filePath}" type="video/webm">
-                  <source src="${filePath}" type="video/ogg">
+                  <source src="${fileUrl}" type="video/mp4">
+                  <source src="${fileUrl}" type="video/webm">
+                  <source src="${fileUrl}" type="video/ogg">
                   Your browser does not support the video tag.
                 </video>
               </div>`
@@ -236,9 +236,9 @@ export default {
               type: 'audio',
               content: `<div class="ui fluid">
                 <audio controls style="width: 100%; max-width: 300px;">
-                  <source src="${filePath}" type="audio/mpeg">
-                  <source src="${filePath}" type="audio/ogg">
-                  <source src="${filePath}" type="audio/wav">
+                  <source src="${fileUrl}" type="audio/mpeg">
+                  <source src="${fileUrl}" type="audio/ogg">
+                  <source src="${fileUrl}" type="audio/wav">
                   Your browser does not support the audio tag.
                 </audio>
               </div>`
@@ -249,7 +249,7 @@ export default {
             return {
               type: 'document',
               content: `<div class="ui labeled button">
-                <a href="${filePath}" download="${filename}" class="ui button">
+                <a href="${fileUrl}" download="${filename}" class="ui button">
                   <i class="download icon"></i>
                   ${filename} ${sizeText}
                 </a>
@@ -263,7 +263,7 @@ export default {
             return {
               type: 'sticker',
               content: `<div class="ui">
-                <img src="${filePath}" alt="Sticker" style="max-width: 150px; max-height: 150px; border-radius: 4px;" 
+                <img src="${fileUrl}" alt="Sticker" style="max-width: 150px; max-height: 150px; border-radius: 4px;" 
                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                 <div style="display: none;" class="ui placeholder segment">
                   <div class="ui icon header">
@@ -355,6 +355,7 @@ export default {
 
         if (response.data && response.data.results) {
           this.downloadedMedia[messageId] = {
+            file_url: response.data.results.file_url || response.data.results.file_path,
             file_path: response.data.results.file_path,
             media_type: response.data.results.media_type,
             file_size: response.data.results.file_size,

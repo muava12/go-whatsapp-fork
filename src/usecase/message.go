@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/aldinokemal/go-whatsapp-web-multidevice/config"
@@ -305,6 +306,9 @@ func (service serviceMessage) DownloadMedia(ctx context.Context, request domainM
 		return response, fmt.Errorf("failed to create directory: %v", err)
 	}
 
+	// Derive MIME type from filename stored in DB
+	mimeType := deriveMimeTypeFromFilename(message.Filename)
+
 	// Create a downloadable message interface based on media type
 	var downloadableMsg any
 
@@ -316,6 +320,7 @@ func (service serviceMessage) DownloadMedia(ctx context.Context, request domainM
 			FileSHA256:    message.FileSHA256,
 			FileEncSHA256: message.FileEncSHA256,
 			FileLength:    proto.Uint64(message.FileLength),
+			Mimetype:      proto.String(mimeType),
 		}
 	case "video":
 		downloadableMsg = &waE2E.VideoMessage{
@@ -324,6 +329,7 @@ func (service serviceMessage) DownloadMedia(ctx context.Context, request domainM
 			FileSHA256:    message.FileSHA256,
 			FileEncSHA256: message.FileEncSHA256,
 			FileLength:    proto.Uint64(message.FileLength),
+			Mimetype:      proto.String(mimeType),
 		}
 	case "audio":
 		downloadableMsg = &waE2E.AudioMessage{
@@ -332,6 +338,7 @@ func (service serviceMessage) DownloadMedia(ctx context.Context, request domainM
 			FileSHA256:    message.FileSHA256,
 			FileEncSHA256: message.FileEncSHA256,
 			FileLength:    proto.Uint64(message.FileLength),
+			Mimetype:      proto.String(mimeType),
 		}
 	case "document":
 		downloadableMsg = &waE2E.DocumentMessage{
@@ -340,6 +347,7 @@ func (service serviceMessage) DownloadMedia(ctx context.Context, request domainM
 			FileSHA256:    message.FileSHA256,
 			FileEncSHA256: message.FileEncSHA256,
 			FileLength:    proto.Uint64(message.FileLength),
+			Mimetype:      proto.String(mimeType),
 			FileName:      proto.String(message.Filename),
 		}
 	case "sticker":
@@ -349,6 +357,7 @@ func (service serviceMessage) DownloadMedia(ctx context.Context, request domainM
 			FileSHA256:    message.FileSHA256,
 			FileEncSHA256: message.FileEncSHA256,
 			FileLength:    proto.Uint64(message.FileLength),
+			Mimetype:      proto.String(mimeType),
 		}
 	default:
 		return response, fmt.Errorf("unsupported media type: %s", message.MediaType)
@@ -386,4 +395,40 @@ func (service serviceMessage) DownloadMedia(ctx context.Context, request domainM
 	})
 
 	return response, nil
+}
+
+// deriveMimeTypeFromFilename maps a file extension to a MIME type.
+// The DB stores Filename with extension (e.g. "image_20260611_150405.jpg")
+// but the DownloadableMessage needs Mimetype for ExtractMedia to determine
+// the output file extension.
+func deriveMimeTypeFromFilename(filename string) string {
+	ext := filepath.Ext(filename)
+	switch strings.ToLower(ext) {
+	case ".jpg", ".jpeg":
+		return "image/jpeg"
+	case ".png":
+		return "image/png"
+	case ".webp":
+		return "image/webp"
+	case ".gif":
+		return "image/gif"
+	case ".mp4":
+		return "video/mp4"
+	case ".ogg":
+		return "audio/ogg"
+	case ".mp3":
+		return "audio/mpeg"
+	case ".aac":
+		return "audio/aac"
+	case ".wav":
+		return "audio/wav"
+	case ".pdf":
+		return "application/pdf"
+	case ".doc", ".docx":
+		return "application/msword"
+	case ".xls", ".xlsx":
+		return "application/vnd.ms-excel"
+	default:
+		return ""
+	}
 }
