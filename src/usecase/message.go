@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -309,6 +310,13 @@ func (service serviceMessage) DownloadMedia(ctx context.Context, request domainM
 	// Derive MIME type from filename stored in DB
 	mimeType := deriveMimeTypeFromFilename(message.Filename)
 
+	// Derive DirectPath from stored URL — whatsmeow Download() uses GetDirectPath(), not GetURL().
+	// Stored URL is full https://..., DirectPath is the path+query part.
+	directPath := ""
+	if parsedURL, err := url.Parse(message.URL); err == nil {
+		directPath = parsedURL.RequestURI()
+	}
+
 	// Create a downloadable message interface based on media type
 	var downloadableMsg any
 
@@ -316,15 +324,17 @@ func (service serviceMessage) DownloadMedia(ctx context.Context, request domainM
 	case "image":
 		downloadableMsg = &waE2E.ImageMessage{
 			URL:           proto.String(message.URL),
+			DirectPath:    proto.String(directPath),
 			MediaKey:      message.MediaKey,
 			FileSHA256:    message.FileSHA256,
 			FileEncSHA256: message.FileEncSHA256,
 			FileLength:    proto.Uint64(message.FileLength),
 			Mimetype:      proto.String(mimeType),
 		}
-	case "video":
+	case "video", "video_note":
 		downloadableMsg = &waE2E.VideoMessage{
 			URL:           proto.String(message.URL),
+			DirectPath:    proto.String(directPath),
 			MediaKey:      message.MediaKey,
 			FileSHA256:    message.FileSHA256,
 			FileEncSHA256: message.FileEncSHA256,
@@ -334,6 +344,7 @@ func (service serviceMessage) DownloadMedia(ctx context.Context, request domainM
 	case "audio":
 		downloadableMsg = &waE2E.AudioMessage{
 			URL:           proto.String(message.URL),
+			DirectPath:    proto.String(directPath),
 			MediaKey:      message.MediaKey,
 			FileSHA256:    message.FileSHA256,
 			FileEncSHA256: message.FileEncSHA256,
@@ -343,6 +354,7 @@ func (service serviceMessage) DownloadMedia(ctx context.Context, request domainM
 	case "document":
 		downloadableMsg = &waE2E.DocumentMessage{
 			URL:           proto.String(message.URL),
+			DirectPath:    proto.String(directPath),
 			MediaKey:      message.MediaKey,
 			FileSHA256:    message.FileSHA256,
 			FileEncSHA256: message.FileEncSHA256,
@@ -353,6 +365,7 @@ func (service serviceMessage) DownloadMedia(ctx context.Context, request domainM
 	case "sticker":
 		downloadableMsg = &waE2E.StickerMessage{
 			URL:           proto.String(message.URL),
+			DirectPath:    proto.String(directPath),
 			MediaKey:      message.MediaKey,
 			FileSHA256:    message.FileSHA256,
 			FileEncSHA256: message.FileEncSHA256,

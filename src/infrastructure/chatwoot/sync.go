@@ -3,6 +3,7 @@ package chatwoot
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -643,6 +644,13 @@ func (s *SyncService) downloadMedia(ctx context.Context, msg *domainChatStorage.
 		return "", fmt.Errorf("WhatsApp client not available")
 	}
 
+	// Derive DirectPath from stored URL — whatsmeow Download() uses GetDirectPath(), not GetURL().
+	// Stored URL is full https://..., DirectPath is the path+query part.
+	directPath := ""
+	if parsedURL, err := url.Parse(msg.URL); err == nil {
+		directPath = parsedURL.RequestURI()
+	}
+
 	// Create downloadable message based on type
 	var downloadable whatsmeow.DownloadableMessage
 
@@ -650,14 +658,16 @@ func (s *SyncService) downloadMedia(ctx context.Context, msg *domainChatStorage.
 	case "image":
 		downloadable = &waE2E.ImageMessage{
 			URL:           proto.String(msg.URL),
+			DirectPath:    proto.String(directPath),
 			MediaKey:      msg.MediaKey,
 			FileSHA256:    msg.FileSHA256,
 			FileEncSHA256: msg.FileEncSHA256,
 			FileLength:    proto.Uint64(msg.FileLength),
 		}
-	case "video":
+	case "video", "video_note":
 		downloadable = &waE2E.VideoMessage{
 			URL:           proto.String(msg.URL),
+			DirectPath:    proto.String(directPath),
 			MediaKey:      msg.MediaKey,
 			FileSHA256:    msg.FileSHA256,
 			FileEncSHA256: msg.FileEncSHA256,
@@ -666,6 +676,7 @@ func (s *SyncService) downloadMedia(ctx context.Context, msg *domainChatStorage.
 	case "audio", "ptt":
 		downloadable = &waE2E.AudioMessage{
 			URL:           proto.String(msg.URL),
+			DirectPath:    proto.String(directPath),
 			MediaKey:      msg.MediaKey,
 			FileSHA256:    msg.FileSHA256,
 			FileEncSHA256: msg.FileEncSHA256,
@@ -674,6 +685,7 @@ func (s *SyncService) downloadMedia(ctx context.Context, msg *domainChatStorage.
 	case "document":
 		downloadable = &waE2E.DocumentMessage{
 			URL:           proto.String(msg.URL),
+			DirectPath:    proto.String(directPath),
 			MediaKey:      msg.MediaKey,
 			FileSHA256:    msg.FileSHA256,
 			FileEncSHA256: msg.FileEncSHA256,
@@ -682,6 +694,7 @@ func (s *SyncService) downloadMedia(ctx context.Context, msg *domainChatStorage.
 	case "sticker":
 		downloadable = &waE2E.StickerMessage{
 			URL:           proto.String(msg.URL),
+			DirectPath:    proto.String(directPath),
 			MediaKey:      msg.MediaKey,
 			FileSHA256:    msg.FileSHA256,
 			FileEncSHA256: msg.FileEncSHA256,
