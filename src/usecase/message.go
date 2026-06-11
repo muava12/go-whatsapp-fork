@@ -315,6 +315,8 @@ func (service serviceMessage) DownloadMedia(ctx context.Context, request domainM
 	directPath := ""
 	if parsedURL, err := url.Parse(message.URL); err == nil {
 		directPath = parsedURL.RequestURI()
+	} else {
+		logrus.Warnf("DownloadMedia: failed to parse URL for message %s: %v (url=%q)", request.MessageID, err, message.URL)
 	}
 
 	// Create a downloadable message interface based on media type
@@ -379,7 +381,7 @@ func (service serviceMessage) DownloadMedia(ctx context.Context, request domainM
 	// Download the media using existing utils.ExtractMedia function
 	extractedMedia, err := utils.ExtractMedia(ctx, client, dateDir, downloadableMsg.(whatsmeow.DownloadableMessage))
 	if err != nil {
-		return response, fmt.Errorf("failed to download media: %v", err)
+		return response, fmt.Errorf("failed to download media: %v (url=%q, directPath=%q)", err, message.URL, directPath)
 	}
 
 	// Get file size
